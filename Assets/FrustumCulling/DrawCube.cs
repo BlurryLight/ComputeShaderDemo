@@ -47,7 +47,7 @@ public class DrawCube : MonoBehaviour
         compute.Dispatch(kernel, 1 + (instanceCount / 640), 1, 1);
         instanceMaterial.SetBuffer("positionBuffer", cullResult);
 
-        //获取实际要渲染的数量
+        //鑾峰彇瀹為檯瑕佹覆鏌撶殑鏁伴噺
         ComputeBuffer.CopyCount(cullResult, cullResultCount, 0);
         cullResultCount.GetData(cullResultCountArray);
         args[1] = cullResultCountArray[0];

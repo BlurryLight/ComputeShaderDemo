@@ -4,18 +4,18 @@ using UnityEngine;
 
 public static class CullTool
 {
-    //Ò»¸öµãºÍÒ»¸ö·¨ÏòÁ¿È·¶¨Ò»¸öÆ½Ãæ
+    //ä¸€ä¸ªç‚¹å’Œä¸€ä¸ªæ³•å‘é‡ç¡®å®šä¸€ä¸ªå¹³é¢
     public static Vector4 GetPlane(Vector3 normal, Vector3 point) {
         return new Vector4(normal.x, normal.y, normal.z, -Vector3.Dot(normal, point));
     }
 
-    //ÈıµãÈ·¶¨Ò»¸öÆ½Ãæ
+    //ä¸‰ç‚¹ç¡®å®šä¸€ä¸ªå¹³é¢
     public static Vector4 GetPlane(Vector3 a, Vector3 b, Vector3 c) {
         Vector3 normal = Vector3.Normalize(Vector3.Cross(b - a, c - a));
         return GetPlane(normal, a);
     }
 
-    //»ñÈ¡ÊÓ×¶ÌåÔ¶Æ½ÃæµÄËÄ¸öµã
+    //è·å–è§†é”¥ä½“è¿œå¹³é¢çš„å››ä¸ªç‚¹
     public static Vector3[] GetCameraFarClipPlanePoint(Camera camera) {
         Vector3[] points = new Vector3[4];
         Transform transform = camera.transform;
@@ -33,13 +33,13 @@ public static class CullTool
         return points;
     }
 
-    //»ñÈ¡ÊÓ×¶ÌåµÄÁù¸öÆ½Ãæ
+    //è·å–è§†é”¥ä½“çš„å…­ä¸ªå¹³é¢
     public static Vector4[] GetFrustumPlane(Camera camera) {
         Vector4[] planes = new Vector4[6];
         Transform transform = camera.transform;
         Vector3 cameraPosition = transform.position;
         Vector3[] points = GetCameraFarClipPlanePoint(camera);
-        //Ë³Ê±Õë
+        //é¡ºæ—¶é’ˆ
         planes[0] = GetPlane(cameraPosition, points[0], points[2]);//left
         planes[1] = GetPlane(cameraPosition, points[3], points[1]);//right
         planes[2] = GetPlane(cameraPosition, points[1], points[0]);//bottom

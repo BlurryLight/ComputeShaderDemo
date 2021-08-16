@@ -5,7 +5,7 @@ Shader "Custom/ScanLine"
 		_MainTex("Origin Texture", 2D) = "white" {}
 		_LineColor("Line Color", Color) = (0, 0.8, 0.2, 1)
 		_LineWidth("Line Width", Range(0, 0.08)) = 0.05
-		_CurValue("Current Value", Range(0, 0.9)) = 0 //����ɨ���ߵ��ƽ�
+		_CurValue("Current Value", Range(0, 0.9)) = 0 //控制扫描线的推进
 	}
 		SubShader
 		{
@@ -16,6 +16,7 @@ Shader "Custom/ScanLine"
 			Pass
 			{
 				CGPROGRAM
+				#pragma enable_d3d11_debug_symbols
 				#pragma vertex vert
 				#pragma fragment frag
 
@@ -58,6 +59,9 @@ Shader "Custom/ScanLine"
 					float depth = UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, i.uv.zw));
 					float linear01Depth = Linear01Depth(depth);
 					float halfWidth = _LineWidth / 2;
+					//_Curval是个[0,1]的可调的值
+					//只有当_curVal等于depth的时候，才会被着色成_LineColor
+					//构成一个扫描线
 					float v = saturate(abs(_CurValue - linear01Depth) / halfWidth);
 					return lerp(_LineColor, originColor, v);
 
