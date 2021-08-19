@@ -53,6 +53,8 @@ Shader "Instanced/InstancedShader" {
                     //float rotation = data.w * data.w * _Time.x * 0.5f;
                     //rotate2D(data.xz, rotation);
 
+                    //因为生成model矩阵的时候scale是统一的，所以只用拿一个元素
+                    //生成的矩阵不包含旋转，所以可以不用矩阵乘法
                     float3 localPosition = v.vertex.xyz * data._11;
                     float3 worldPosition = data._14_24_34 + localPosition;
                     float3 worldNormal = v.normal;

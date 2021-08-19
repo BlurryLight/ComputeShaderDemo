@@ -1,28 +1,41 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [RequireComponent(typeof(Camera))]
 public class DepthTextureGenerator : MonoBehaviour {
-    public Shader depthTextureShader;//ÓÃÀ´Éú³ÉmipmapµÄshader
+    public Shader depthTextureShader;//ç”¨æ¥ç”Ÿæˆmipmapçš„shader
 
-    RenderTexture m_depthTexture;//´ø mipmap µÄÉî¶ÈÍ¼
+    RenderTexture m_depthTexture;//å¸¦ mipmap çš„æ·±åº¦å›¾
     public RenderTexture depthTexture => m_depthTexture;
 
     int m_depthTextureSize = 0;
     public int depthTextureSize {
         get {
-            if(m_depthTextureSize == 0)
+            if (m_depthTextureSize == 0)
+            {
                 m_depthTextureSize = Mathf.NextPowerOfTwo(Mathf.Max(Screen.width, Screen.height));
+            }
             return m_depthTextureSize;
         }
     }
 
     Material m_depthTextureMaterial;
-    const RenderTextureFormat m_depthTextureFormat = RenderTextureFormat.RHalf;//Éî¶ÈÈ¡Öµ·¶Î§0-1£¬µ¥Í¨µÀ¼´¿É¡£
+    const RenderTextureFormat m_depthTextureFormat = RenderTextureFormat.RHalf;//æ·±åº¦å–å€¼èŒƒå›´0-1ï¼Œå•é€šé“å³å¯ã€‚
 
     int m_textureSizeShaderID;
     int m_depthTextureShaderID;
+    private CommandBuffer cmdbuf;
+
+    private void Awake()
+    {
+        #if UNITY_EDITOR
+                    QualitySettings.vSyncCount = 0;  // VSync must be disabled
+                    Application.targetFrameRate = 15;
+        #endif
+    }
 
     void Start() {
         m_depthTextureMaterial = new Material(depthTextureShader);
@@ -32,6 +45,7 @@ public class DepthTextureGenerator : MonoBehaviour {
         m_depthTextureShaderID = Shader.PropertyToID("_CameraDepthTexture");
 
         InitDepthTexture();
+        Camera.main.AddCommandBuffer(CameraEvent.AfterDepthTexture,cmdbuf);
     }
 
     void InitDepthTexture() {
@@ -41,31 +55,34 @@ public class DepthTextureGenerator : MonoBehaviour {
         m_depthTexture.useMipMap = true;
         m_depthTexture.filterMode = FilterMode.Point;
         m_depthTexture.Create();
+        cmdbuf = new CommandBuffer() {name = "mipmap depth"};
+        
+
     }
 
-    //Éú³Émipmap
-    void OnPostRender() {
+    //ç”Ÿæˆmipmap
+    void OnPreRender() {
+        cmdbuf.Clear(); 
         int w = m_depthTexture.width;
         int mipmapLevel = 0;
+        RenderTexture currentRenderTexture = null;//å½“å‰mipmapLevelå¯¹åº”çš„mipmap
+        RenderTexture preRenderTexture = null;//ä¸Šä¸€å±‚çš„mipmapï¼Œå³mipmapLevel-1å¯¹åº”çš„mipmap
 
-        RenderTexture currentRenderTexture = null;//µ±Ç°mipmapLevel¶ÔÓ¦µÄmipmap
-        RenderTexture preRenderTexture = null;//ÉÏÒ»²ãµÄmipmap£¬¼´mipmapLevel-1¶ÔÓ¦µÄmipmap
-
-        //Èç¹ûµ±Ç°µÄmipmapµÄ¿í¸ß´óÓÚ8£¬Ôò¼ÆËãÏÂÒ»²ãµÄmipmap
+        //å¦‚æœå½“å‰çš„mipmapçš„å®½é«˜å¤§äº8ï¼Œåˆ™è®¡ç®—ä¸‹ä¸€å±‚çš„mipmap
         while(w > 8) {
             currentRenderTexture = RenderTexture.GetTemporary(w, w, 0, m_depthTextureFormat);
             currentRenderTexture.filterMode = FilterMode.Point;
             if(preRenderTexture == null) {
-                //Mipmap[0]¼´copyÔ­Ê¼µÄÉî¶ÈÍ¼
-                Graphics.Blit(Shader.GetGlobalTexture(m_depthTextureShaderID), currentRenderTexture);
+                //Mipmap[0]å³copyåŸå§‹çš„æ·±åº¦å›¾
+                cmdbuf.Blit(null, currentRenderTexture,m_depthTextureMaterial,1);
             }
             else {
-                //½«Mipmap[i] Blitµ½Mipmap[i+1]ÉÏ
+                //å°†Mipmap[i] Blitåˆ°Mipmap[i+1]ä¸Š
                 m_depthTextureMaterial.SetInt(m_textureSizeShaderID, w);
-                Graphics.Blit(preRenderTexture, currentRenderTexture, m_depthTextureMaterial);
+                cmdbuf.Blit(preRenderTexture, currentRenderTexture, m_depthTextureMaterial,0);
                 RenderTexture.ReleaseTemporary(preRenderTexture);
             }
-            Graphics.CopyTexture(currentRenderTexture, 0, 0, m_depthTexture, 0, mipmapLevel);
+            cmdbuf.CopyTexture(currentRenderTexture, 0, 0, m_depthTexture, 0, mipmapLevel);
             preRenderTexture = currentRenderTexture;
 
             w /= 2;
@@ -74,8 +91,15 @@ public class DepthTextureGenerator : MonoBehaviour {
         RenderTexture.ReleaseTemporary(preRenderTexture);
     }
 
+    private void OnDisable()
+    {
+        Camera.main.RemoveCommandBuffer(CameraEvent.AfterDepthTexture,cmdbuf);
+    }
+
     void OnDestroy() {
         m_depthTexture?.Release();
         Destroy(m_depthTexture);
+        cmdbuf?.Dispose();
+        cmdbuf = null;
     }
 }

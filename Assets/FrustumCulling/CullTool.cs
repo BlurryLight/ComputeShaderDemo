@@ -40,6 +40,7 @@ public static class CullTool
         Vector3 cameraPosition = transform.position;
         Vector3[] points = GetCameraFarClipPlanePoint(camera);
         //顺时针
+        //Unity是一个左手坐标系，计算叉乘应该左手法则
         planes[0] = GetPlane(cameraPosition, points[0], points[2]);//left
         planes[1] = GetPlane(cameraPosition, points[3], points[1]);//right
         planes[2] = GetPlane(cameraPosition, points[1], points[0]);//bottom

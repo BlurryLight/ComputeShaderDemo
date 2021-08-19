@@ -14,6 +14,7 @@ Shader "Custom/DepthTextureMipmapCalculator"
                 #pragma target 3.0
                 #pragma vertex vert
                 #pragma fragment frag
+                #include "UnityCG.cginc"
 
                 sampler2D _MainTex;
                 int _MainTexSize;
@@ -50,10 +51,50 @@ Shader "Custom/DepthTextureMipmapCalculator"
                     o.uv = v.uv;
                     return o;
                 }
-                float4 frag(v2f input) : Color
+                float frag(v2f input) : SV_TARGET
                 {
                     float depth = CalculatorMipmapDepth(input.uv);
-                    return float4(depth, 0, 0, 1.0f);
+                    return depth;
+                }
+                ENDCG
+            }
+            
+            Pass {
+                Cull Off
+                ZWrite Off
+                ZTest Always
+
+                CGPROGRAM
+                #pragma target 3.0
+                #pragma vertex vert
+                #pragma fragment frag
+                #include "UnityCG.cginc"
+
+                sampler2D _CameraDepthTexture;
+
+                struct appdata
+                {
+                    float4 vertex : POSITION;
+                    float2 uv : TEXCOORD0;
+                };
+                struct v2f
+                {
+                    float4 vertex : SV_POSITION;
+                    float2 uv : TEXCOORD0;
+                };
+                v2f vert(appdata v)
+                {
+                    v2f o;
+                    o.vertex = UnityObjectToClipPos(v.vertex.xyz);
+                    o.uv = v.uv;
+                    return o;
+                }
+
+                float frag(v2f input) : SV_TARGET
+                {
+                    // input.uv.y = 1 - input.uv.y;
+                    float depth = tex2D(_CameraDepthTexture,input.uv);
+                    return depth;
                 }
                 ENDCG
             }

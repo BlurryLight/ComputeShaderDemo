@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 public class DrawParticle : MonoBehaviour
@@ -8,7 +9,7 @@ public class DrawParticle : MonoBehaviour
     public Material material;
 
     ComputeBuffer mParticleDataBuffer;
-    const int mParticleCount = 20000;
+    const int mParticleCount = 20480;
     int kernelId;
 
     struct ParticleData {
@@ -17,8 +18,8 @@ public class DrawParticle : MonoBehaviour
     }
 
     void Start() {
-        //structÖÐÒ»¹²7¸öfloat£¬size=28
-        mParticleDataBuffer = new ComputeBuffer(mParticleCount, 28);
+        //structä¸­ä¸€å…±7ä¸ªfloatï¼Œsize=28
+        mParticleDataBuffer = new ComputeBuffer(mParticleCount, Marshal.SizeOf(typeof(ParticleData)));
         ParticleData[] particleDatas = new ParticleData[mParticleCount];
         mParticleDataBuffer.SetData(particleDatas);
         kernelId = computeShader.FindKernel("UpdateParticle");
@@ -27,7 +28,7 @@ public class DrawParticle : MonoBehaviour
     void Update() {
         computeShader.SetBuffer(kernelId, "ParticleBuffer", mParticleDataBuffer);
         computeShader.SetFloat("Time", Time.time);
-        computeShader.Dispatch(kernelId, mParticleCount / 1000, 1, 1);
+        computeShader.Dispatch(kernelId, mParticleCount / 640 , 1, 1);
         material.SetBuffer("_particleDataBuffer", mParticleDataBuffer);
     }
 

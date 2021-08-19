@@ -1,29 +1,33 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class GrassGenerator : MonoBehaviour
 {
     public Mesh grassMesh;
     public int subMeshIndex = 0;
     public Material grassMaterial;
-    public int GrassCountPerRaw = 300;//Ã¿ĞĞ²İµÄÊıÁ¿
+    public int GrassCountPerRaw = 300;//æ¯è¡Œè‰çš„æ•°é‡
     public DepthTextureGenerator depthTextureGenerator;
-    public ComputeShader compute;//ÌŞ³ıµÄComputeShader
+    public ComputeShader compute;//å‰”é™¤çš„ComputeShader
 
     int m_grassCount;
     int kernel;
     Camera mainCamera;
 
     ComputeBuffer argsBuffer;
-    ComputeBuffer grassMatrixBuffer;//ËùÓĞ²İµÄÊÀ½ç×ø±ê¾ØÕó
-    ComputeBuffer cullResultBuffer;//ÌŞ³ıºóµÄ½á¹û
-    ComputeBuffer cullResultCount;//ÌŞ³ıºóµÄÊıÁ¿
+    ComputeBuffer grassMatrixBuffer;//æ‰€æœ‰è‰çš„ä¸–ç•Œåæ ‡çŸ©é˜µ
+    ComputeBuffer cullResultBuffer;//å‰”é™¤åçš„ç»“æœ
+    ComputeBuffer cullResultCount;//å‰”é™¤åçš„æ•°é‡
 
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     uint[] cullResultCountArray = new uint[1] { 0 };
 
     int cullResultBufferId, vpMatrixId, positionBufferId, hizTextureId;
+    private CommandBuffer cmdbuf;
+    public bool applyCull = false;
 
     void Start()
     {
@@ -41,6 +45,8 @@ public class GrassGenerator : MonoBehaviour
         InitComputeBuffer();
         InitGrassPosition();
         InitComputeShader();
+        cmdbuf = new CommandBuffer {name = "Cull and Draw grass"};
+        mainCamera.AddCommandBuffer(CameraEvent.BeforeSkybox,cmdbuf);
     }
 
     void InitComputeShader() {
@@ -64,25 +70,45 @@ public class GrassGenerator : MonoBehaviour
         cullResultCount = new ComputeBuffer(1, sizeof(uint), ComputeBufferType.IndirectArguments);
     }
 
-    void Update()
-    {
+    void Update(){
+        // cmdbuf.Clear();
+        // compute.SetBool("_ApplyCull",applyCull);
+        // compute.SetTexture(kernel, hizTextureId, depthTextureGenerator.depthTexture);
+        // compute.SetMatrix(vpMatrixId, GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false) * mainCamera.worldToCameraMatrix);
+        // // cullResultBuffer.SetCounterValue(0);
+        // cmdbuf.SetComputeBufferCounterValue(cullResultBuffer,0);
+        // cmdbuf.SetComputeBufferParam(compute,kernel,cullResultBufferId,cullResultBuffer);
+        // // compute.Dispatch(kernel, 1 + m_grassCount / 640, 1, 1);
+        // cmdbuf.DispatchCompute(compute,kernel,1 + m_grassCount / 640,1,1);
+        // cmdbuf.SetGlobalBuffer(positionBufferId,cullResultBuffer);
+        // // grassMaterial.SetBuffer(positionBufferId, cullResultBuffer);
+        //
+        // //è·å–å®é™…è¦æ¸²æŸ“çš„æ•°é‡
+        // cmdbuf.CopyCounterValue(cullResultBuffer, cullResultCount, 0);
+        // cullResultCount.GetData(cullResultCountArray);
+        // args[1] = cullResultCountArray[0];
+        // // argsBuffer.SetData(args);
+        // cmdbuf.SetComputeBufferData(argsBuffer,args);
+        // cmdbuf.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, 0, argsBuffer);
+        
         compute.SetTexture(kernel, hizTextureId, depthTextureGenerator.depthTexture);
+        compute.SetBool("_ApplyCull",applyCull);
         compute.SetMatrix(vpMatrixId, GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false) * mainCamera.worldToCameraMatrix);
         cullResultBuffer.SetCounterValue(0);
         compute.SetBuffer(kernel, cullResultBufferId, cullResultBuffer);
         compute.Dispatch(kernel, 1 + m_grassCount / 640, 1, 1);
         grassMaterial.SetBuffer(positionBufferId, cullResultBuffer);
-
-        //»ñÈ¡Êµ¼ÊÒªäÖÈ¾µÄÊıÁ¿
+        
+        
         ComputeBuffer.CopyCount(cullResultBuffer, cullResultCount, 0);
         cullResultCount.GetData(cullResultCountArray);
         args[1] = cullResultCountArray[0];
         argsBuffer.SetData(args);
-
+        
         Graphics.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f)), argsBuffer);
     }
 
-    //»ñÈ¡Ã¿¸ö²İµÄÊÀ½ç×ø±ê¾ØÕó
+    //è·å–æ¯ä¸ªè‰çš„ä¸–ç•Œåæ ‡çŸ©é˜µ
     void InitGrassPosition() {
         const int padding = 2;
         int width = (100 - padding * 2);
@@ -99,7 +125,7 @@ public class GrassGenerator : MonoBehaviour
         grassMatrixBuffer.SetData(grassMatrixs);
     }
 
-    //Í¨¹ıRaycast¼ÆËã²İµÄ¸ß¶È
+    //é€šè¿‡Raycastè®¡ç®—è‰çš„é«˜åº¦
     float GetGroundHeight(Vector2 xz) {
         RaycastHit hit;
         if(Physics.Raycast(new Vector3(xz.x, 10, xz.y), Vector3.down, out hit, 20)) {
@@ -120,5 +146,12 @@ public class GrassGenerator : MonoBehaviour
 
         argsBuffer?.Release();
         argsBuffer = null;
+        mainCamera.RemoveCommandBuffer(CameraEvent.BeforeSkybox,cmdbuf);
+    }
+
+    private void OnDestroy()
+    {
+        cmdbuf?.Dispose();
+        cmdbuf = null;
     }
 }

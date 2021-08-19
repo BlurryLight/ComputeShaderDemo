@@ -56,9 +56,11 @@
      <Compile Include="Assets\OcclusionCulling\Hiz\DepthTextureGenerator.cs" />
      <Compile Include="Assets\Particle\DrawParticle.cs" />
      <Compile Include="Assets\FrustumCulling\DrawCube.cs" />
+     <Compile Include="Assets\CSTexture\Dispath.cs" />
      <Compile Include="Assets\OcclusionCulling\Hiz\GrassGenerator.cs" />
      <Compile Include="Assets\FrustumCulling\CullTool.cs" />
      <None Include="Assets\DepthTexture\ShowDepthTexture.shader" />
+     <None Include="Assets\CSTexture\TexTest.compute" />
      <None Include="Assets\OcclusionCulling\Hiz\DepthTextureMipmapCalculator.shader" />
      <None Include="Assets\OcclusionCulling\Hiz\InstanceGrass.shader" />
      <None Include="Assets\Particle\UpdateParticle.compute" />
@@ -66,6 +68,7 @@
      <None Include="Assets\Nicrom\PolyPacks\Wind\Documentation\LPW_Log.txt" />
      <None Include="Assets\Particle\ParticleShader.shader" />
      <None Include="Assets\Nicrom\PolyPacks\Wind\Assets\Shaders\ASE\LPW_Vegetation.shader" />
+     <None Include="Assets\CSTexture\sample.shader" />
      <None Include="Assets\FrustumCulling\FrustumCulling.compute" />
      <None Include="Assets\DepthTexture\ScanLine.shader" />
      <None Include="Assets\FrustumCulling\InstancedShader.shader" />

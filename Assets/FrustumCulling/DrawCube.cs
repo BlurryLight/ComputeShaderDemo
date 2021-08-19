@@ -21,11 +21,16 @@ public class DrawCube : MonoBehaviour
     ComputeBuffer cullResultCount;
     int kernel;
     Camera mainCamera;
+    public bool applyCull = false;
 
     void Start() {
         kernel = compute.FindKernel("ViewPortCulling");
         mainCamera = Camera.main;
         cullResult = new ComputeBuffer(instanceCount, sizeof(float) * 16, ComputeBufferType.Append);
+        //indirect draw需要的5个参数 
+        //Buffer with arguments, bufferWithArgs, has to have five integer numbers at given argsOffset offset:
+        //index count per instance, instance count, start index location, base vertex location, start instance location.
+        //申请空间
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         cullResultCount = new ComputeBuffer(1, sizeof(uint), ComputeBufferType.IndirectArguments);
 
@@ -35,6 +40,7 @@ public class DrawCube : MonoBehaviour
     void Update() {
         if(cachedInstanceCount != instanceCount || cachedSubMeshIndex != subMeshIndex)
             UpdateBuffers();
+        compute.SetBool("_DoCull",applyCull);
 
         Vector4[] planes = CullTool.GetFrustumPlane(mainCamera);
 
@@ -44,11 +50,14 @@ public class DrawCube : MonoBehaviour
         compute.SetInt("instanceCount", instanceCount);
         compute.SetVectorArray("planes", planes);
         
+        //每一个线程组640个线程
         compute.Dispatch(kernel, 1 + (instanceCount / 640), 1, 1);
         instanceMaterial.SetBuffer("positionBuffer", cullResult);
 
         //获取实际要渲染的数量
+        //copy append count
         ComputeBuffer.CopyCount(cullResult, cullResultCount, 0);
+        //copy buffer data to an array
         cullResultCount.GetData(cullResultCountArray);
         args[1] = cullResultCountArray[0];
         argsBuffer.SetData(args);
@@ -64,6 +73,7 @@ public class DrawCube : MonoBehaviour
         if(localToWorldMatrixBuffer != null)
             localToWorldMatrixBuffer.Release();
 
+        //每次修改submeshindex都会触发重新生成matrix
         localToWorldMatrixBuffer = new ComputeBuffer(instanceCount, 16 * sizeof(float));
         List<Matrix4x4> localToWorldMatrixs = new List<Matrix4x4>();
         for(int i = 0; i < instanceCount; i++) {

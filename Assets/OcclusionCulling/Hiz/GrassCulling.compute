@@ -5,6 +5,7 @@ uint grassCount;//草的总数量
 uint depthTextureSize;//原始深度图的大小
 StructuredBuffer<float4x4> grassMatrixBuffer;//所有草的M矩阵
 bool isOpenGL;//是否是OpenGL的API
+bool _ApplyCull = false;
 
 float4x4 vpMatrix;//相机的VP矩阵
 AppendStructuredBuffer<float4x4> cullResultBuffer;//剔除后保留的草
@@ -33,6 +34,11 @@ void GrassCulling(uint3 id : SV_DispatchThreadID)
 
     //单个草从View Space变换到World Space的矩阵，即M矩阵
     float4x4 grassMatrix = grassMatrixBuffer[id.x];
+    if(!_ApplyCull)
+    {
+        cullResultBuffer.Append(grassMatrix);
+        return;
+    }
     //得到单个草的mvp矩阵
     float4x4 mvpMatrix = mul(vpMatrix, grassMatrix);
 
