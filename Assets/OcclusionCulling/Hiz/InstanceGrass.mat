@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: InstanceGrass
-  m_Shader: {fileID: 4800000, guid: 848a8a0fec4212f42a84915c30aed8e8, type: 3}
+  m_Shader: {fileID: 4800000, guid: ee3ad44d63dafc24e9f66c5181713328, type: 3}
   m_ShaderKeywords: _ENABLEHORIZONTALBENDING_ON _ENABLEHORIZONTALMOVEMENT_ON _ENABLEMAINBENDING_ON
     _ENABLEVERTICALBENDING_ON _ENABLEVERTICALMOVEMENT_ON
   m_LightmapFlags: 4
@@ -42,8 +42,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 2800000, guid: 225da740038919f4ca9eaff413945956, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+        m_Scale: {x: 0.17, y: 1}
+        m_Offset: {x: 0.05, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -72,14 +72,14 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _MBAmplitude: 0
+    - _MBAmplitude: 1.17
     - _MBAmplitudeOffset: 3
     - _MBDefaultBending: 0
     - _MBFrequency: 0.03
-    - _MBFrequencyOffset: 0.33
-    - _MBMaxHeight: 1.24
-    - _MBPhase: 10
-    - _MBWindDir: 90
+    - _MBFrequencyOffset: 8.11
+    - _MBMaxHeight: 4
+    - _MBPhase: 16.83
+    - _MBWindDir: 87
     - _MBWindDirOffset: 108.3
     - _Metallic: 0
     - _Mode: 0
@@ -96,5 +96,5 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _NoisePannerSpeed: {r: 0.08, g: 0.04, b: 0, a: 0}
-    - _NoiseTextureTilling: {r: 1, g: 1, b: 1, a: 1}
+    - _NoiseTextureTilling: {r: 1.81, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

@@ -17,6 +17,7 @@ Shader "Custom/DepthTextureMipmapCalculator"
                 #include "UnityCG.cginc"
 
                 sampler2D _MainTex;
+                float4 _MainTex_TexelSize;
                 int _MainTexSize;
 
                 struct appdata
@@ -33,11 +34,15 @@ Shader "Custom/DepthTextureMipmapCalculator"
                 inline float CalculatorMipmapDepth(float2 uv)
                 {
                     float4 depth;
-                    float offset = 0.5f / _MainTexSize;
-                    depth.x = tex2D(_MainTex, uv);
-                    depth.y = tex2D(_MainTex, uv + float2(0, offset));
-                    depth.z = tex2D(_MainTex, uv + float2(offset, 0));
-                    depth.w = tex2D(_MainTex, uv + float2(offset, offset));
+                    // float offset = 0.5f / _MainTexSize;
+                    float2 offset = 0.5f * _MainTex_TexelSize.xy;
+                    depth.x = tex2D(_MainTex, uv + offset);
+                    depth.y = tex2D(_MainTex, uv - offset);
+                    depth.z = tex2D(_MainTex, float2(uv.x + offset.x,uv.y - offset.y));
+                    depth.w = tex2D(_MainTex, float2(uv.x - offset.x,uv.y + offset.y));
+                    // depth.y = tex2D(_MainTex, uv + float2(0, offset));
+                    // depth.z = tex2D(_MainTex, uv + float2(offset, 0));
+                    // depth.w = tex2D(_MainTex, uv + float2(offset, offset));
     #if defined(UNITY_REVERSED_Z)
                     return min(min(depth.x, depth.y), min(depth.z, depth.w));
     #else

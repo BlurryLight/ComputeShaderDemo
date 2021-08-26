@@ -23,7 +23,8 @@ Shader "Unlit/InstanceGrass"
 
 		SubShader
 		{
-			Tags{ "RenderType" = "Opaque"  "Queue" = "Geometry+0" }
+//			Tags{ "RenderType" = "Opaque"  "Queue" = "Geometry+0" }
+			Tags { "RenderType"="Opaque" }
 			Cull Back
 			CGPROGRAM
 			#include "UnityShaderVariables.cginc"

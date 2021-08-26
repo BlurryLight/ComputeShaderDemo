@@ -20,10 +20,8 @@ public class GrassGenerator : MonoBehaviour
     ComputeBuffer argsBuffer;
     ComputeBuffer grassMatrixBuffer;//所有草的世界坐标矩阵
     ComputeBuffer cullResultBuffer;//剔除后的结果
-    ComputeBuffer cullResultCount;//剔除后的数量
 
     uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
-    uint[] cullResultCountArray = new uint[1] { 0 };
 
     int cullResultBufferId, vpMatrixId, positionBufferId, hizTextureId;
     private CommandBuffer cmdbuf;
@@ -65,32 +63,27 @@ public class GrassGenerator : MonoBehaviour
     void InitComputeBuffer() {
         if(grassMatrixBuffer != null) return;
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+        argsBuffer.SetData(args);
         grassMatrixBuffer = new ComputeBuffer(m_grassCount, sizeof(float) * 16);
         cullResultBuffer = new ComputeBuffer(m_grassCount, sizeof(float) * 16, ComputeBufferType.Append);
-        cullResultCount = new ComputeBuffer(1, sizeof(uint), ComputeBufferType.IndirectArguments);
     }
 
     void Update(){
-        // cmdbuf.Clear();
-        // compute.SetBool("_ApplyCull",applyCull);
-        // compute.SetTexture(kernel, hizTextureId, depthTextureGenerator.depthTexture);
-        // compute.SetMatrix(vpMatrixId, GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false) * mainCamera.worldToCameraMatrix);
-        // // cullResultBuffer.SetCounterValue(0);
-        // cmdbuf.SetComputeBufferCounterValue(cullResultBuffer,0);
-        // cmdbuf.SetComputeBufferParam(compute,kernel,cullResultBufferId,cullResultBuffer);
-        // // compute.Dispatch(kernel, 1 + m_grassCount / 640, 1, 1);
-        // cmdbuf.DispatchCompute(compute,kernel,1 + m_grassCount / 640,1,1);
-        // cmdbuf.SetGlobalBuffer(positionBufferId,cullResultBuffer);
-        // // grassMaterial.SetBuffer(positionBufferId, cullResultBuffer);
-        //
-        // //获取实际要渲染的数量
-        // cmdbuf.CopyCounterValue(cullResultBuffer, cullResultCount, 0);
-        // cullResultCount.GetData(cullResultCountArray);
-        // args[1] = cullResultCountArray[0];
-        // // argsBuffer.SetData(args);
-        // cmdbuf.SetComputeBufferData(argsBuffer,args);
-        // cmdbuf.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, 0, argsBuffer);
+        cmdbuf.Clear();
+        compute.SetBool("_ApplyCull",applyCull);
+        cmdbuf.SetComputeTextureParam(compute,kernel,hizTextureId,depthTextureGenerator.depthTexture);
+        cmdbuf.SetComputeMatrixParam(compute,vpMatrixId,GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false) * mainCamera.worldToCameraMatrix);
+        cmdbuf.SetComputeBufferCounterValue(cullResultBuffer,0);
+        cmdbuf.SetComputeBufferParam(compute,kernel,cullResultBufferId,cullResultBuffer);
+        cmdbuf.DispatchCompute(compute,kernel,1 + m_grassCount / 640,1,1);
+        grassMaterial.SetBuffer(positionBufferId,cullResultBuffer);
+        //获取实际要渲染的数量
+        cmdbuf.CopyCounterValue(cullResultBuffer, argsBuffer, sizeof(uint));
+        cmdbuf.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, -1, argsBuffer,0);
         
+        
+        //this is for debug to draw grass in scene window
+        /*
         compute.SetTexture(kernel, hizTextureId, depthTextureGenerator.depthTexture);
         compute.SetBool("_ApplyCull",applyCull);
         compute.SetMatrix(vpMatrixId, GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false) * mainCamera.worldToCameraMatrix);
@@ -100,12 +93,9 @@ public class GrassGenerator : MonoBehaviour
         grassMaterial.SetBuffer(positionBufferId, cullResultBuffer);
         
         
-        ComputeBuffer.CopyCount(cullResultBuffer, cullResultCount, 0);
-        cullResultCount.GetData(cullResultCountArray);
-        args[1] = cullResultCountArray[0];
-        argsBuffer.SetData(args);
-        
+        ComputeBuffer.CopyCount(cullResultBuffer, argsBuffer, sizeof(uint));
         Graphics.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f)), argsBuffer);
+        */
     }
 
     //获取每个草的世界坐标矩阵
@@ -140,9 +130,6 @@ public class GrassGenerator : MonoBehaviour
 
         cullResultBuffer?.Release();
         cullResultBuffer = null;
-
-        cullResultCount?.Release();
-        cullResultCount = null;
 
         argsBuffer?.Release();
         argsBuffer = null;
