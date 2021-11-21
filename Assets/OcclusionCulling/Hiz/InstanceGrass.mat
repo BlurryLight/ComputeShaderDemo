@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: InstanceGrass
-  m_Shader: {fileID: 4800000, guid: ee3ad44d63dafc24e9f66c5181713328, type: 3}
+  m_Shader: {fileID: 4800000, guid: 848a8a0fec4212f42a84915c30aed8e8, type: 3}
   m_ShaderKeywords: _ENABLEHORIZONTALBENDING_ON _ENABLEHORIZONTALMOVEMENT_ON _ENABLEMAINBENDING_ON
     _ENABLEVERTICALBENDING_ON _ENABLEVERTICALMOVEMENT_ON
   m_LightmapFlags: 4

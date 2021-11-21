@@ -12,6 +12,9 @@ public class GrassGenerator : MonoBehaviour
     public int GrassCountPerRaw = 300;//每行草的数量
     public DepthTextureGenerator depthTextureGenerator;
     public ComputeShader compute;//剔除的ComputeShader
+    public bool single_grass_debug=false;
+    public bool scene_debug=false;
+    public bool enable_shadow_screen = false;
 
     int m_grassCount;
     int kernel;
@@ -25,6 +28,8 @@ public class GrassGenerator : MonoBehaviour
 
     int cullResultBufferId, vpMatrixId, positionBufferId, hizTextureId;
     private CommandBuffer cmdbuf;
+    private CommandBuffer drawGrassBuf;
+    private CommandBuffer debugGrassBuf;
     public bool applyCull = false;
 
     void Start()
@@ -43,8 +48,12 @@ public class GrassGenerator : MonoBehaviour
         InitComputeBuffer();
         InitGrassPosition();
         InitComputeShader();
-        cmdbuf = new CommandBuffer {name = "Cull and Draw grass"};
-        mainCamera.AddCommandBuffer(CameraEvent.BeforeSkybox,cmdbuf);
+        cmdbuf = new CommandBuffer {name = "Cull"};
+        drawGrassBuf = new CommandBuffer {name = "Draw grass"};
+        debugGrassBuf = new CommandBuffer {name = "debug grass"};
+        mainCamera.AddCommandBuffer(CameraEvent.AfterForwardOpaque,cmdbuf);
+        mainCamera.AddCommandBuffer(CameraEvent.BeforeSkybox,drawGrassBuf);
+        mainCamera.AddCommandBuffer(CameraEvent.BeforeSkybox,debugGrassBuf);
     }
 
     void InitComputeShader() {
@@ -79,23 +88,42 @@ public class GrassGenerator : MonoBehaviour
         grassMaterial.SetBuffer(positionBufferId,cullResultBuffer);
         //获取实际要渲染的数量
         cmdbuf.CopyCounterValue(cullResultBuffer, argsBuffer, sizeof(uint));
-        cmdbuf.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, -1, argsBuffer,0);
         
+        drawGrassBuf.Clear();
+        drawGrassBuf.EnableShaderKeyword("LIGHTPROBE_SH");
+        if(enable_shadow_screen)
+            drawGrassBuf.EnableShaderKeyword("SHADOWS_SCREEN");
+        else
+            drawGrassBuf.DisableShaderKeyword("SHADOWS_SCREEN");
+
+        drawGrassBuf.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, 0, argsBuffer,0);
+        //frame buffer cannot see the information of the gpu-driven drawcall
+        debugGrassBuf.Clear();
+        // 感觉不启动SHADOWS_SCREEN的效果是最正常的
+        if (single_grass_debug)
+        {
+            drawGrassBuf.Clear();
+            debugGrassBuf.EnableShaderKeyword("LIGHTPROBE_SH");
+            if(enable_shadow_screen)
+                debugGrassBuf.EnableShaderKeyword("SHADOWS_SCREEN");
+            else
+                debugGrassBuf.DisableShaderKeyword("SHADOWS_SCREEN");
+            debugGrassBuf.DrawMesh(grassMesh, Matrix4x4.TRS(new Vector3(-20,0,5), Quaternion.identity,  new Vector3(5,5,5)), grassMaterial, 0, 0);
+        }
+
+        if (scene_debug)
+        {
+            //this is for debug to draw grass in scene window
+            //use Graphics.DrawInstanceIndirect will also draw meshes on the Scene panel
+            drawGrassBuf.Clear();
+            debugGrassBuf.Clear();
+            if(enable_shadow_screen)
+                grassMaterial.EnableKeyword("SHADOWS_SCREEN");
+            else
+                grassMaterial.DisableKeyword("SHADOWS_SCREEN");
+            Graphics.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f)), argsBuffer);
+        }
         
-        //this is for debug to draw grass in scene window
-        /*
-        compute.SetTexture(kernel, hizTextureId, depthTextureGenerator.depthTexture);
-        compute.SetBool("_ApplyCull",applyCull);
-        compute.SetMatrix(vpMatrixId, GL.GetGPUProjectionMatrix(mainCamera.projectionMatrix, false) * mainCamera.worldToCameraMatrix);
-        cullResultBuffer.SetCounterValue(0);
-        compute.SetBuffer(kernel, cullResultBufferId, cullResultBuffer);
-        compute.Dispatch(kernel, 1 + m_grassCount / 640, 1, 1);
-        grassMaterial.SetBuffer(positionBufferId, cullResultBuffer);
-        
-        
-        ComputeBuffer.CopyCount(cullResultBuffer, argsBuffer, sizeof(uint));
-        Graphics.DrawMeshInstancedIndirect(grassMesh, subMeshIndex, grassMaterial, new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f)), argsBuffer);
-        */
     }
 
     //获取每个草的世界坐标矩阵
